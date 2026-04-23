@@ -606,8 +606,7 @@ def render_control_section():
         uploaded_file = st.file_uploader(
             "上传Excel文件",
             type=['xlsx'],
-            key='excel_uploader',
-            label_visibility="collapsed"
+            key='excel_uploader'
         )
         if uploaded_file is not None:
             handle_excel_upload(uploaded_file)
@@ -795,8 +794,9 @@ def render_left_panel():
     with st.expander("➕ 添加新人员", expanded=False):
         new_name_col1, new_name_col2 = st.columns([3, 1])
         with new_name_col1:
-            new_name = st.text_input("输入姓名", key='new_name_input', label_visibility="collapsed")
+            new_name = st.text_input("输入姓名", key='new_name_input', placeholder="请输入姓名")
         with new_name_col2:
+            st.markdown("<br>", unsafe_allow_html=True)
             add_btn = st.button("添加", key='add_person_btn', use_container_width=True)
             if add_btn:
                 handle_add_person(new_name)
@@ -863,12 +863,11 @@ def render_left_panel():
             
             with btn_col5:
                 # 编辑姓名
-                with st.expander("✏️", expanded=False):
+                with st.expander("✏️ 编辑", expanded=False):
                     edit_name = st.text_input(
                         "编辑姓名",
                         value=name,
-                        key=f"edit_name_{person_id}",
-                        label_visibility="collapsed"
+                        key=f"edit_name_{person_id}"
                     )
                     if edit_name != name and edit_name.strip():
                         handle_update_name(person_id, edit_name)
@@ -992,34 +991,72 @@ def render_seat_card(col, seat: Dict, state_manager: StateManager):
     is_swap_target = (state_manager.swap_mode_enabled and 
                        state_manager.swap_seat1_id == seat_id)
     
-    # CSS类
-    css_classes = ['seat-card']
-    if is_empty:
-        css_classes.append('empty')
-    if is_selected:
-        css_classes.append('selected')
-    if is_matched:
-        css_classes.append('matched')
-    if is_swap_target:
-        css_classes.append('swap-target')
-    
-    class_str = ' '.join(css_classes)
-    
     # 创建唯一的key
     btn_key = f"seat_{seat_id}"
     
-    # 使用st.button来处理点击
+    # 构建背景色
+    bg_color = "#fafafa"
+    border_color = "#e0e0e0"
+    
+    if is_selected:
+        bg_color = "#e3f2fd"
+        border_color = "#4a90e2"
+    elif is_matched:
+        bg_color = "#fff3e0"
+        border_color = "#ff9800"
+    elif is_swap_target:
+        bg_color = "#ffebee"
+        border_color = "#f44336"
+    
+    border_style = "solid"
+    if is_empty:
+        border_style = "dashed"
+    
+    text_color = "#333"
+    if is_empty:
+        text_color = "#999"
+    
     with col:
-        # 显示座位卡片
+        # 显示座位卡片（使用HTML）
         st.markdown(f"""
-        <div class='{class_str}' style='margin-bottom: 0;'>
+        <div style='text-align: center; padding: 6px 4px; border-radius: 6px; 
+                    background-color: {bg_color};
+                    border: 2px {border_style} {border_color};
+                    margin: 4px 2px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;'>
             <div style='font-size: 10px; color: #666; margin-bottom: 2px;'>{display_label}</div>
-            <div style='font-weight: bold; font-size: 13px;'>{name}</div>
+            <div style='font-weight: bold; font-size: 12px; color: {text_color};'>{name}</div>
         </div>
         """, unsafe_allow_html=True)
         
-        # 隐藏的按钮用于处理点击
-        if st.button("选择", key=btn_key, label_visibility="collapsed"):
+        # 构建按钮帮助文本
+        help_text = ""
+        if state_manager.swap_mode_enabled:
+            if is_swap_target:
+                help_text = "已选择第一个座位，请点击第二个座位完成交换"
+            else:
+                help_text = "点击选择此座位进行交换"
+        else:
+            if person_id:
+                help_text = f"点击选中: {name}"
+            else:
+                help_text = "空座位（交换模式下可点击）"
+        
+        # 按钮用于处理点击（不隐藏，使用简洁文本）
+        btn_label = "选中" if person_id else "点击"
+        if state_manager.swap_mode_enabled:
+            if is_swap_target:
+                btn_label = "✓ 已选"
+            else:
+                btn_label = "选择"
+        
+        if st.button(
+            btn_label,
+            key=btn_key,
+            help=help_text,
+            use_container_width=True
+        ):
             if state_manager.swap_mode_enabled:
                 # 交换模式
                 handle_select_swap_seat(seat_id)
@@ -1030,12 +1067,11 @@ def render_seat_card(col, seat: Dict, state_manager: StateManager):
         
         # 编辑功能（如果有人）
         if person:
-            with st.expander("✏️", expanded=False):
+            with st.expander("✏️ 编辑", expanded=False):
                 edit_name = st.text_input(
                     "编辑姓名",
                     value=name,
-                    key=f"edit_seat_{seat_id}",
-                    label_visibility="collapsed"
+                    key=f"edit_seat_{seat_id}"
                 )
                 if edit_name != name and edit_name.strip():
                     handle_update_name(person_id, edit_name)
